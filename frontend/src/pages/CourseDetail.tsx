@@ -38,9 +38,7 @@ function CourseDetail({ user }: any) {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-indigo-600 border-t-transparent"></div>
-      </div>
+      <div className="flex items-center justify-center py-20 text-gray-500">Loading...</div>
     );
   }
 
@@ -66,73 +64,47 @@ function CourseDetail({ user }: any) {
   };
 
   return (
-    <div>
+    <div className="max-w-3xl mx-auto px-2 py-4 sm:py-6">
       {/* Course Header */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 mb-8">
-        <div className="max-w-3xl">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">
-            {course.title}
-          </h1>
-          <p className="text-lg text-gray-600 mb-4">{course.description}</p>
-          <div className="inline-flex items-center text-sm text-gray-500 bg-gray-50 px-4 py-2 rounded-lg">
-            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-            {course.weeks.length} weeks total
-          </div>
-        </div>
+      <div className="bg-white border border-gray-100 rounded-md p-4 mb-4 flex flex-col gap-1">
+        <h1 className="text-xl font-semibold mb-1 truncate">{course.title}</h1>
+        <p className="text-sm text-gray-600 mb-1 truncate">{course.description}</p>
+        <div className="text-xs text-gray-500 bg-gray-50 px-2 py-0.5 rounded w-fit">{course.weeks.length} weeks</div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Weeks List */}
-        <div className="lg:col-span-2 space-y-3">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Weekly Assignments</h2>
+        <div className="lg:col-span-2 flex flex-col gap-2">
+          <h2 className="text-base font-medium mb-2">Weekly Assignments</h2>
           {course.weeks.map((week: any) => {
             const submission = submissionMap.get(week.id);
             return (
               <div
                 key={week.id}
                 onClick={() => handleWeekClick(week)}
-                className={`bg-white rounded-lg shadow-sm border transition-all duration-200 cursor-pointer ${
+                className={`bg-white border rounded-md transition-all duration-200 cursor-pointer px-2 py-2 flex items-center justify-between gap-2 ${
                   selectedWeek?.id === week.id 
-                    ? 'border-indigo-600 shadow-md' 
-                    : 'border-gray-100 hover:border-gray-300 hover:shadow'
+                    ? 'border-gray-400' 
+                    : 'border-gray-100 hover:border-gray-300'
                 }`}
               >
-                <div className="p-6">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-3 mb-2">
-                        <span className="inline-flex items-center justify-center w-8 h-8 bg-indigo-100 text-indigo-600 rounded-lg text-sm font-semibold">
-                          {week.weekNumber}
-                        </span>
-                        <h3 className="text-lg font-semibold text-gray-900">
-                          {week.title}
-                        </h3>
-                      </div>
-                      <p className="text-sm text-gray-600 ml-11">
-                        {week.description}
-                      </p>
-                      {submission && (
-                        <div className="mt-3 ml-11 text-xs text-gray-500">
-                          Submitted {new Date(submission.submittedAt).toLocaleDateString()}
-                        </div>
-                      )}
-                    </div>
-                    {submission ? (
-                      <span className="flex-shrink-0 inline-flex items-center px-3 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
-                        <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                        </svg>
-                        Completed
-                      </span>
-                    ) : (
-                      <span className="flex-shrink-0 inline-flex items-center px-3 py-1 bg-gray-100 text-gray-600 text-xs font-medium rounded-full">
-                        Not submitted
-                      </span>
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="inline-flex items-center justify-center w-6 h-6 bg-gray-100 text-gray-700 rounded text-xs font-semibold flex-shrink-0">
+                    {week.weekNumber}
+                  </span>
+                  <div className="min-w-0">
+                    <h3 className="text-sm font-semibold truncate">{week.title}</h3>
+                    <p className="text-xs text-gray-500 truncate">{week.description}</p>
+                    {submission && (
+                      <div className="mt-1 text-xs text-gray-400">Submitted {new Date(submission.submittedAt).toLocaleDateString()}</div>
                     )}
                   </div>
                 </div>
+                {submission ? (
+                  <span className="px-2 py-0.5 bg-green-50 text-green-700 text-xs rounded-full">✓</span>
+                ) : (
+                  <span className="px-2 py-0.5 bg-gray-50 text-gray-400 text-xs rounded-full">–</span>
+                )}
               </div>
             );
           })}
@@ -141,32 +113,20 @@ function CourseDetail({ user }: any) {
         {/* Submission Form */}
         {selectedWeek && (
           <div className="lg:col-span-1">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6 sticky top-8">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                Week {selectedWeek.weekNumber} Submission
-              </h3>
+            <div className="bg-white border border-gray-100 rounded-md p-3 sticky top-8 flex flex-col gap-2">
+              <h3 className="text-sm font-semibold mb-1">Week {selectedWeek.weekNumber} Submission</h3>
               <textarea
                 value={submissionContent}
                 onChange={(e) => setSubmissionContent(e.target.value)}
                 placeholder="Write your submission here..."
-                className="w-full h-64 p-4 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none text-sm"
+                className="w-full h-32 p-2 border border-gray-200 rounded focus:ring-1 focus:ring-gray-300 focus:border-transparent resize-none text-xs"
               />
               <button
                 onClick={handleSubmit}
                 disabled={submitMutation.isPending || !submissionContent.trim()}
-                className="mt-4 w-full px-6 py-3 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                className="w-full px-3 py-1.5 bg-gray-800 text-white font-medium rounded hover:bg-gray-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-sm"
               >
-                {submitMutation.isPending ? (
-                  <span className="flex items-center justify-center">
-                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Submitting...
-                  </span>
-                ) : (
-                  'Submit Assignment'
-                )}
+                {submitMutation.isPending ? 'Submitting...' : 'Submit'}
               </button>
             </div>
           </div>

@@ -20,31 +20,20 @@ function Layout({ user, setUser }: LayoutProps) {
   };
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen w-full bg-white font-sans text-gray-900">
       {/* Top Navigation */}
-      <nav className="border-b border-gray-200 bg-white sticky top-0 z-50">
-        <div className="px-6">
+      <nav className="border-b border-gray-100 bg-white sticky top-0 z-50">
+        <div className="px-4">
           <div className="flex justify-between items-center h-14">
-            <Link to="/" className="flex items-center space-x-2">
-              <div className="w-7 h-7 bg-red-600 rounded flex items-center justify-center">
-                <span className="text-white font-bold text-sm">C</span>
-              </div>
-              <span className="text-lg font-semibold text-gray-900">Course Platform</span>
+            <Link to="/" className="text-base font-semibold text-gray-900 no-underline">
+              Course Platform
             </Link>
-            
             {user && (
-              <div className="flex items-center space-x-4">
-                <div className="flex items-center space-x-2">
-                  <img 
-                    src={user.avatarUrl} 
-                    alt={user.username}
-                    className="w-7 h-7 rounded-full"
-                  />
-                  <span className="text-sm text-gray-700">{user.username}</span>
-                </div>
+              <div className="flex items-center space-x-3">
+                <span className="text-sm text-gray-700">{user.username}</span>
                 <button
                   onClick={handleLogout}
-                  className="text-sm text-gray-600 hover:text-gray-900"
+                  className="text-gray-500 text-sm border border-gray-200 rounded px-2 py-1 hover:bg-gray-50 transition-none"
                 >
                   Logout
                 </button>
@@ -53,7 +42,6 @@ function Layout({ user, setUser }: LayoutProps) {
           </div>
         </div>
       </nav>
-      
       {/* Main Content */}
       <main>
         <Outlet />
