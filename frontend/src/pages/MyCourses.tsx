@@ -1,7 +1,8 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { enrollmentApi, submissionApi } from '../lib/api';
+import { enrollmentApi, authApi } from '../lib/api';
+
 
 function MyCourses() {
   const { data: enrollments, isLoading } = useQuery({
@@ -11,6 +12,15 @@ function MyCourses() {
       return response.data;
     }
   });
+
+  const { data: currentUser } = useQuery({
+    queryKey: ['current-user'],
+    queryFn: async () => {
+      const res = await authApi.getCurrentUser();
+      return res.data;
+    }
+  });
+  const username = currentUser?.username;
 
   if (isLoading) {
     return <div className="text-center py-12 text-gray-500">Loading...</div>;
@@ -22,7 +32,7 @@ function MyCourses() {
       {enrollments && enrollments.length > 0 ? (
         <div className="flex flex-col gap-3">
           {enrollments.map((enrollment: any) => (
-            <CourseProgress key={enrollment.id} enrollment={enrollment} />
+            <CourseProgress key={enrollment.id} enrollment={enrollment} username={username} />
           ))}
         </div>
       ) : (
@@ -36,12 +46,9 @@ function MyCourses() {
 
 function CourseProgress({ enrollment }: any) {
   // Simulate progress calculation (replace with real logic if needed)
-  const submittedWeekIds = new Set(
-    (enrollment.submissions || []).map((s: any) => s.weekId)
-  );
-  const progress = enrollment.course.weeks.length
-    ? (submittedWeekIds.size / enrollment.course.weeks.length) * 100
-    : 0;
+  const totalAssignments = enrollment.course.weeks.reduce((acc: number, w: any) => acc + (w.assignments ? w.assignments.length : 0), 0);
+  const completedAssignments = (enrollment.submissions || []).length;
+  const progress = totalAssignments > 0 ? (completedAssignments / totalAssignments) * 100 : 0;
 
   return (
     <div className="bg-white border rounded-md p-3 flex flex-col gap-2">
@@ -71,18 +78,20 @@ function CourseProgress({ enrollment }: any) {
       </div>
       <div className="flex flex-col gap-1">
         <h3 className="font-semibold text-xs text-gray-700 mb-1">Weekly Progress:</h3>
-        {enrollment.course.weeks.map((week: any) => (
-          <div key={week.id} className="flex items-center justify-between py-1 border-b last:border-b-0">
-            <span className="font-medium text-xs text-gray-700 truncate">
-              W{week.weekNumber}: {week.title}
-            </span>
-            {submittedWeekIds.has(week.id) ? (
-              <span className="px-2 py-0.5 bg-green-50 text-green-700 text-xs rounded-full">✓</span>
-            ) : (
-              <span className="px-2 py-0.5 bg-gray-50 text-gray-400 text-xs rounded-full">–</span>
-            )}
-          </div>
-        ))}
+        {enrollment.course.weeks.map((week: any) => {
+          const total = week.assignments ? week.assignments.length : 0;
+          const completed = (enrollment.submissions || []).filter((s: any) => s.assignment && s.assignment.weekId === week.id).length;
+          return (
+            <div key={week.id} className={`flex items-center justify-between py-1 border-b last:border-b-0 ${completed > 0 ? 'bg-green-50' : ''}`}>
+              <span className={`font-medium text-xs truncate ${completed > 0 ? 'text-green-700' : 'text-gray-700'}`}>
+                W{week.weekNumber}: {week.title}
+              </span>
+              <div className="flex items-center gap-3">
+                <span className="text-xs text-gray-500">{completed}/{total} problems</span>
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

@@ -25,6 +25,8 @@ export const enrollmentApi = {
   getMyCourses: () => api.get('/api/enrollments/my-courses'),
   enrollInCourse: (courseId: string) => 
     api.post('/api/enrollments', { courseId }),
+  enrollInCourseBySlug: (courseSlug: string, weekNumber?: number) =>
+    api.post('/api/enrollments', { courseSlug, weekNumber }),
   unenrollFromCourse: (courseId: string) => 
     api.delete(`/api/enrollments/${courseId}`),
 };
@@ -32,12 +34,18 @@ export const enrollmentApi = {
 export const submissionApi = {
   getCourseSubmissions: (courseId: string) => 
     api.get(`/api/submissions/course/${courseId}`),
-  getWeekSubmission: (weekId: string) => 
-    api.get(`/api/submissions/week/${weekId}`),
-  submitAssignment: (weekId: string, content: string) => 
-    api.post('/api/submissions', { weekId, content }),
-  deleteSubmission: (weekId: string) => 
-    api.delete(`/api/submissions/${weekId}`),
+  getAssignmentSubmission: (assignmentId: string) => 
+    api.get(`/api/submissions/assignment/${assignmentId}`),
+  submitAssignment: (assignmentId: string, content: string) => 
+    api.post('/api/submissions', { assignmentId, content }),
+  deleteSubmission: (assignmentId: string) => 
+    api.delete(`/api/submissions/${assignmentId}`),
+};
+
+export const gradesApi = {
+  // GET /api/grades?username=...&assignmentId=...
+  getGrades: (username: string, assignmentId?: string, limit = 1) =>
+    api.get('/api/grades', { params: { username, assignmentId, limit } }),
 };
 
 export default api;

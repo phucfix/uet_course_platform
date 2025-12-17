@@ -41,34 +41,36 @@ function Home() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {enrollments.map((enrollment: any) => (
-          <Link
-            key={enrollment.id}
-            to={`/courses/${enrollment.course.slug}`}
-            className="group bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden border border-gray-100"
-          >
-            <div className="h-2 bg-gradient-to-r from-indigo-600 to-purple-600"></div>
-            <div className="p-6">
-              <h3 className="text-xl font-semibold text-gray-900 mb-2 group-hover:text-indigo-600 transition-colors">
-                {enrollment.course.title}
-              </h3>
-              <p className="text-gray-600 text-sm mb-4 line-clamp-2">
-                {enrollment.course.description}
-              </p>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-500">
-                  {enrollment.course.weeks?.length || 0} weeks
-                </span>
-                <span className="text-indigo-600 font-medium group-hover:translate-x-1 transition-transform inline-flex items-center">
-                  Continue
-                  <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </span>
+        {enrollments.map((enrollment: any) => {
+          // total assignments is sum of assignments across weeks
+          const total = enrollment.course.weeks?.reduce((acc: number, w: any) => acc + (w.assignments ? w.assignments.length : 0), 0) || 0;
+          const completed = (enrollment.submissions || []).length;
+          const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
+          return (
+            <Link
+              key={enrollment.id}
+              to={`/courses/${enrollment.course.slug}`}
+              className="group bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden border border-gray-100"
+            >
+              <div className="h-2 bg-gradient-to-r from-green-500 to-green-300"></div>
+              <div className="p-6">
+                <h3 className="text-xl font-semibold text-gray-900 mb-2 group-hover:text-green-600 transition-colors">
+                  {enrollment.course.title}
+                </h3>
+                <p className="text-gray-600 text-sm mb-4 line-clamp-2">
+                  {enrollment.course.description}
+                </p>
+                <div className="w-full bg-gray-100 rounded-full h-2 mb-3">
+                  <div className="bg-green-500 h-2 rounded-full" style={{ width: `${pct}%` }} />
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-500">{completed} of {total} problems</span>
+                  <span className="text-green-600 font-medium">{pct}%</span>
+                </div>
               </div>
-            </div>
-          </Link>
-        ))}
+            </Link>
+          );
+        })}
       </div>
     </div>
   );

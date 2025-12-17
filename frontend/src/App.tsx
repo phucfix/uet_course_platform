@@ -46,7 +46,7 @@ function App() {
             <Route path="login" element={!user ? <Login /> : <Navigate to="/" />} />
             <Route 
               path="courses/:slug" 
-              element={user ? <CourseDetail user={user} /> : <Navigate to="/login" />} 
+              element={<CourseDetail user={user} />} 
             />
           </Route>
         </Routes>
