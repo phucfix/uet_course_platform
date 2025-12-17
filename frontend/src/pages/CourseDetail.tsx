@@ -7,8 +7,7 @@ import GradeBadge from '../components/GradeBadge';
 function CourseDetail({ user }: any) {
   const { slug } = useParams();
   const queryClient = useQueryClient();
-  const [selectedAssignment, setSelectedAssignment] = useState<any>(null);
-  const [submissionContent, setSubmissionContent] = useState('');
+
 
   const { data: course, isLoading } = useQuery({
     queryKey: ['course', slug],
@@ -31,9 +30,11 @@ function CourseDetail({ user }: any) {
 
 
   const { data: submissions } = useQuery({
-    queryKey: ['course-submissions', course?.id],
+    // include user id in the key so the query is per-user and refetches when user changes
+    queryKey: ['course-submissions', course?.id, user?.id],
     queryFn: async () => {
       const response = await submissionApi.getCourseSubmissions(course.id);
+      console.debug('fetched submissions for course', course?.id, 'user', user?.username, response.data);
       return response.data;
     },
     enabled: !!course && !!user
@@ -82,28 +83,20 @@ function CourseDetail({ user }: any) {
     const openSubmit = params.get('openSubmit');
     const problem = params.get('problem');
 
+    // If redirected from content site with openSubmit, forward user to the problem page (we no longer show a submission form here)
     if (enrollWeekParam && openSubmit && problem && course) {
       const targetWeek = course.weeks.find((w: any) => String(w.weekNumber) === String(enrollWeekParam));
-      if (targetWeek && targetWeek.assignments && targetWeek.assignments.length > 0) {
-        // pre-select the first assignment in the week if problem not specified
-        const targetAssignment = targetWeek.assignments[0];
-        setSelectedAssignment(targetAssignment);
-        setSubmissionContent(`Submission for problem: ${problem}`);
+      if (targetWeek) {
+        const probSlug = String(problem);
+        const contentUrl = `http://localhost:1313/courses/${slug}/week${enrollWeekParam}/problems/${probSlug}/`;
+        window.open(contentUrl, '_blank');
+        // remove query params from URL to avoid repeated behavior
+        navigate(location.pathname, { replace: true });
       }
     }
-
-    // No auto-enroll mutations here.
   }, [location.search, course]);
 
-  const submitMutation = useMutation({
-    mutationFn: ({ assignmentId, content }: any) => 
-      submissionApi.submitAssignment(assignmentId, content),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['course-submissions'] });
-      setSelectedAssignment(null);
-      setSubmissionContent('');
-    }
-  });
+
 
   if (isLoading) {
     return (
@@ -167,10 +160,23 @@ function CourseDetail({ user }: any) {
   // Map submissions keyed by assignmentId for quick lookup
   const submissionMap = new Map(submissions?.map((s: any) => [s.assignmentId, s]) || []);
 
-  const handleAssignmentClick = (assignment: any) => {
-    setSelectedAssignment(assignment);
-    const existingSubmission = submissionMap.get(assignment.id) as any;
-    setSubmissionContent((existingSubmission as any)?.content || `Submission for ${assignment.title}`);
+  // Fallback: some auth endpoints behave inconsistently for authenticated browser sessions
+  // so if we don't get submissions from the dedicated endpoint, try to derive them from
+  // the user's enrollments (server attaches `submissions` to enrollment). This makes
+  // the UI robust even when `/api/submissions/course/:id` doesn't return data.
+  if ((submissions || []).length === 0 && Array.isArray(myEnrollments) && course) {
+    const myEnrollment = myEnrollments.find((e: any) => e.courseId === course.id);
+    if (myEnrollment && Array.isArray(myEnrollment.submissions) && myEnrollment.submissions.length > 0) {
+      console.debug('Using enrollment submissions fallback; found', myEnrollment.submissions.length);
+      for (const s of myEnrollment.submissions) {
+        submissionMap.set(s.assignmentId, s);
+      }
+    }
+  }
+
+  // No-op: assignments are read-only on this page now (no submission or navigation from here)
+  const handleAssignmentClick = () => {
+    return;
   };
 
   const handleSubmit = () => {
@@ -183,7 +189,7 @@ function CourseDetail({ user }: any) {
   };
 
   return (
-    <div className="max-w-3xl mx-auto px-2 py-4 sm:py-6">
+    <div className="max-w-6xl mx-auto px-4 py-6 sm:py-8">
       {/* Course Header */}
       <div className="bg-white border border-gray-100 rounded-md p-4 mb-4 flex flex-col gap-1">
         <h1 className="text-xl font-semibold mb-1 truncate">{course.title}</h1>
@@ -194,6 +200,8 @@ function CourseDetail({ user }: any) {
             {enrollMsg}
           </div>
         )}
+
+
         {/* Show enroll CTA if user is logged in but not enrolled */}
         {user && !isEnrolled && (
           <div className="mt-3">
@@ -230,70 +238,71 @@ function CourseDetail({ user }: any) {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Weeks List */}
-        <div className="lg:col-span-2 flex flex-col gap-2">
-          <h2 className="text-base font-medium mb-2">Weekly Assignments</h2>
-          {course.weeks.map((week: any) => {
-            return (
-              <div key={week.id} className={`px-2 py-2 rounded-md bg-white border border-gray-100`}>                
-                <div className="flex items-center gap-2 mb-2">
-                  <span className={`inline-flex items-center justify-center w-6 h-6 rounded text-xs font-semibold flex-shrink-0 bg-gray-100 text-gray-700`}>
-                    {week.weekNumber}
-                  </span>
-                  <div>
-                    <h3 className="text-sm font-semibold">{week.title}</h3>
-                    <p className="text-xs text-gray-500">{week.description}</p>
+        <div className="lg:col-span-2 max-w-2xl mx-auto">
+          <h2 className="text-base font-medium mb-4">Weekly Assignments</h2>
+
+          <div className="space-y-6">
+            {course.weeks.map((week: any, wi: number) => {
+              // week is considered completed when all assignments have submissions
+              const assignments = week.assignments || [];
+              const weekCompleted = assignments.length > 0 && assignments.every((a: any) => submissionMap.has(a.id));
+
+              return (
+                <div key={week.id} className="flex items-start gap-4">
+                  {/* Left timeline column */}
+                  <div className="flex flex-col items-center mt-1">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center text-base font-bold ${weekCompleted ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-700'}`}>
+                      {week.weekNumber}
+                    </div>
+                    {/* vertical line between weeks */}
+                    {wi !== course.weeks.length - 1 && <div className="w-px bg-gray-200 flex-1 mt-2" style={{ minHeight: '3rem' }} />}
+                  </div>
+
+                  {/* Right content */}
+                  <div className="flex-1">
+                    <div className={`bg-white border border-gray-100 rounded-md p-3 ${weekCompleted ? 'border-l-4 border-green-600 pl-3' : ''}`}>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h3 className="text-sm font-semibold">{week.title}</h3>
+                          {week.description && <p className="text-xs text-gray-500">{week.description}</p>}
+                        </div>
+                        <div className="text-xs text-gray-400">{assignments.length} problems</div>
+                      </div>
+
+                      <div className="mt-3 space-y-2">
+                        {assignments.length > 0 ? (
+                          assignments.map((a: any) => {
+                            const sub = submissionMap.get(a.id);
+                            const completed = !!sub;
+                            const submittedAt = sub ? (sub as any).submittedAt : null;
+                            return (
+                              <div key={a.id} className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                  <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-sm font-semibold ${completed ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-400'}`}>
+                                    {completed ? '✓' : ''}
+                                  </span>
+                                  <div className={`text-sm ${completed ? 'text-green-800 font-semibold' : 'text-gray-900'}`}>{a.title}</div>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                  {submittedAt && <div className="text-xs text-gray-400">Submitted {new Date(submittedAt).toLocaleDateString()}</div>}
+                                  <GradeBadge username={user?.username} assignmentId={a.id} />
+                                </div>
+                              </div>
+                            );
+                          })
+                        ) : (
+                          <div className="text-xs text-gray-400">No problems defined for this week.</div>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </div>
-                <div className="flex flex-col gap-2">
-                  {week.assignments && week.assignments.length > 0 ? (
-                    week.assignments.map((a: any) => {
-                      const sub = submissionMap.get(a.id);
-                      const completed = !!sub;
-                      const submittedAt = sub ? (sub as any).submittedAt : null;
-                      return (
-                        <div key={a.id} onClick={() => handleAssignmentClick(a)} className={`transition-all duration-150 cursor-pointer px-2 py-2 rounded-md flex items-center justify-between ${completed ? 'bg-green-50 border border-green-200' : 'bg-white border border-gray-100 hover:border-gray-300' }`}>
-                          <div className="min-w-0">
-                            <div className="text-sm font-medium truncate">{a.title}</div>
-                            <div className="text-xs text-gray-500 truncate">{a.description}</div>
-                            {submittedAt && <div className="mt-1 text-xs text-gray-400">Submitted {new Date(submittedAt).toLocaleDateString()}</div>}
-                          </div>
-                          <div className="flex items-center gap-3">
-                            {completed ? <span className="px-2 py-0.5 bg-green-50 text-green-700 text-xs rounded-full">✓</span> : <span className="px-2 py-0.5 bg-gray-50 text-gray-400 text-xs rounded-full">–</span>}
-                            <GradeBadge username={user?.username} assignmentId={a.id} />
-                          </div>
-                        </div>
-                      );
-                    })
-                  ) : (
-                    <div className="text-xs text-gray-400">No problems defined for this week.</div>
-                  )}
-                </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
 
-        {/* Submission Form */}
-        {selectedAssignment && (
-          <div className="lg:col-span-1">
-            <div className="bg-white border border-gray-100 rounded-md p-3 sticky top-8 flex flex-col gap-2">
-              <h3 className="text-sm font-semibold mb-1">{selectedAssignment.title} Submission</h3>
-              <textarea
-                value={submissionContent}
-                onChange={(e) => setSubmissionContent(e.target.value)}
-                placeholder="Write your submission here..."
-                className="w-full h-32 p-2 border border-gray-200 rounded focus:ring-1 focus:ring-gray-300 focus:border-transparent resize-none text-xs"
-              />
-              <button
-                onClick={handleSubmit}
-                disabled={submitMutation.isPending || !submissionContent.trim()}
-                className="w-full px-3 py-1.5 bg-gray-800 text-white font-medium rounded hover:bg-gray-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-sm"
-              >
-                {submitMutation.isPending ? 'Submitting...' : 'Submit'}
-              </button>
-            </div>
-          </div>
-        )}
+
       </div>
     </div>
   );

@@ -26,7 +26,7 @@ function Layout({ user, setUser }: LayoutProps) {
         <div className="px-4">
           <div className="flex justify-between items-center h-14">
             <Link to="/" className="text-base font-semibold text-gray-900 no-underline">
-              Course Platform
+              Dashboard
             </Link>
             {user && (
               <div className="flex items-center space-x-3">

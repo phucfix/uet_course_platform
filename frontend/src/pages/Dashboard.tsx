@@ -36,17 +36,53 @@ function Dashboard() {
         <h2 className="text-base font-medium mb-2">My Enrolled Courses</h2>
         {enrollments && enrollments.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-            {enrollments.map((enrollment: any) => (
-              <Link
-                key={enrollment.id}
-                to={`/courses/${enrollment.course.slug}`}
-                className="border rounded-md p-3 bg-white flex flex-col gap-1 hover:shadow-sm transition"
-              >
-                <h3 className="text-sm font-semibold truncate">{enrollment.course.title}</h3>
-                <p className="text-xs text-gray-600 truncate">{enrollment.course.description}</p>
-                <div className="text-xs text-gray-400">{enrollment.course.weeks.length} weeks</div>
-              </Link>
-            ))}
+            {enrollments.map((enrollment: any) => {
+              const submissionMap = new Map((enrollment.submissions || []).map((s: any) => [s.assignmentId, s]));
+              return (
+                <Link
+                  key={enrollment.id}
+                  to={`/courses/${enrollment.course.slug}`}
+                  className="border rounded-md p-3 bg-white flex flex-col gap-2 hover:shadow-sm transition"
+                >
+                  <div>
+                    <h3 className="text-sm font-semibold truncate">{enrollment.course.title}</h3>
+                    <p className="text-xs text-gray-600 truncate">{enrollment.course.description}</p>
+                    <div className="text-xs text-gray-400">{enrollment.course.weeks.length} weeks</div>
+                  </div>
+
+                  {/* Compact week + assignment preview with completion */}
+                  <div className="mt-2 space-y-2">
+                    {enrollment.course.weeks.map((w: any) => (
+                      <div key={w.id} className="bg-gray-50 p-2 rounded">
+                        <div className="flex items-center justify-between">
+                          <div className="text-xs font-semibold">Week {w.weekNumber}</div>
+                          <div className="text-xs text-gray-400">{w.assignments?.length || 0} problems</div>
+                        </div>
+                        <div className="mt-2 space-y-1">
+                          {w.assignments && w.assignments.length > 0 ? (
+                            w.assignments.map((a: any) => {
+                              const completed = submissionMap.has(a.id);
+                              return (
+                                <div key={a.id} className={`flex items-center justify-between text-xs px-2 py-1 rounded ${completed ? 'bg-white border border-green-200' : ''}`}>
+                                  <div className={`truncate ${completed ? 'text-green-800 font-medium' : 'text-gray-700'}`}>{a.title}</div>
+                                  {completed ? (
+                                    <span className="inline-flex items-center justify-center w-6 h-6 bg-green-600 text-white rounded-full text-xs font-semibold">✓</span>
+                                  ) : (
+                                    <span className="text-gray-300">&mdash;</span>
+                                  )}
+                                </div>
+                              );
+                            })
+                          ) : (
+                            <div className="text-xs text-gray-400">No problems</div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </Link>
+              );
+            })}
           </div>
         ) : (
           <div className="bg-gray-50 rounded p-4 text-center">
