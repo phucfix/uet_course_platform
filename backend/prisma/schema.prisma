@@ -13,6 +13,12 @@ model User {
   username      String
   email         String?
   avatarUrl     String?
+  // OAuth access token from GitHub (store securely; consider encrypting at rest)
+  githubAccessToken String?
+  // Comma-separated scopes granted for the stored access token
+  githubTokenScopes String?
+  // When the token was last updated
+  githubAccessTokenUpdatedAt DateTime?
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   
