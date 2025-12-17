@@ -35,7 +35,8 @@ router.get('/:slug', async (req, res) => {
       where: { slug: req.params.slug },
       include: {
         weeks: {
-          orderBy: { weekNumber: 'asc' }
+          orderBy: { weekNumber: 'asc' },
+          include: { assignments: { orderBy: { createdAt: 'asc' } } }
         },
         _count: {
           select: { enrollments: true }

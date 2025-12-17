@@ -78,8 +78,14 @@ router.get('/github/callback', async (req, res) => {
       });
     }
 
-    // Establish server session
+    // Establish server session (store in session and also initialize passport session)
     (req.session as any).userId = user.id;
+    if (typeof (req as any).login === 'function') {
+      // populate passport session so req.isAuthenticated() works
+      (req as any).login(user, (err: any) => {
+        if (err) console.error('Passport login error:', err);
+      });
+    }
 
     // Redirect back to original page if present
     const sessParsed = (() => { try { return JSON.parse(sessionState); } catch { return null; } })();
@@ -111,15 +117,32 @@ router.get('/user', async (req, res) => {
 // Logout
 router.post('/logout', (req, res) => {
   try {
-    // destroy session
-    req.session?.destroy((err) => {
-      if (err) return res.status(500).json({ message: 'Logout failed' });
-      // also call passport logout if available
-      if (typeof (req as any).logout === 'function') {
-        (req as any).logout();
+    // call passport logout if available (safe with callback)
+    const doLogout = () => {
+      try {
+        if (typeof (req as any).logout === 'function') {
+          (req as any).logout((err: any) => {
+            if (err) console.error('Logout callback error:', err);
+            // destroy session after logout
+            req.session?.destroy((destroyErr) => {
+              if (destroyErr) return res.status(500).json({ message: 'Logout failed' });
+              res.json({ message: 'Logged out successfully' });
+            });
+          });
+        } else {
+          // destroy session if no passport logout
+          req.session?.destroy((destroyErr) => {
+            if (destroyErr) return res.status(500).json({ message: 'Logout failed' });
+            res.json({ message: 'Logged out successfully' });
+          });
+        }
+      } catch (e: any) {
+        console.error('Logout error', e);
+        res.status(500).json({ message: 'Logout failed' });
       }
-      res.json({ message: 'Logged out successfully' });
-    });
+    };
+
+    doLogout();
   } catch (err: any) {
     console.error('Logout failed', err);
     res.status(500).json({ message: 'Logout failed' });

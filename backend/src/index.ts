@@ -8,6 +8,7 @@ import courseRoutes from './routes/courses';
 import enrollmentRoutes from './routes/enrollments';
 import submissionRoutes from './routes/submissions';
 import codespacesRoutes from './routes/codespaces';
+import webhookRoutes from './routes/webhook';
 
 dotenv.config();
 
@@ -56,6 +57,10 @@ app.use('/api/courses', courseRoutes);
 app.use('/api/enrollments', enrollmentRoutes);
 app.use('/api/submissions', submissionRoutes);
 app.use('/api/codespaces', codespacesRoutes);
+app.use('/webhook', webhookRoutes);
+app.use('/api/debug', require('./routes/debug').default);
+app.use('/api/tools', require('./routes/tools').default);
+app.use('/api/grades', require('./routes/grades').default);
 
 app.get('/', (req, res) => {
   res.json({ message: 'Course Platform API' });

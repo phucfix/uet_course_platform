@@ -51,9 +51,24 @@ model Week {
   
   course        Course         @relation(fields: [courseId], references: [id], onDelete: Cascade)
   submissions   Submission[]
+  assignments   Assignment[]
   
   @@unique([courseId, weekNumber])
 }
+
+model Assignment {
+  id          String   @id @default(cuid())
+  weekId      String
+  title       String
+  slug        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+
+  week        Week     @relation(fields: [weekId], references: [id], onDelete: Cascade)
+  submissions Submission[]
+  workspaceRuns WorkspaceRun[]
+}
+
 
 model Enrollment {
   id            String         @id @default(cuid())
@@ -70,12 +85,38 @@ model Enrollment {
 model Submission {
   id            String         @id @default(cuid())
   userId        String
-  weekId        String
+  weekId        String?
+  assignmentId  String
   content       String
   submittedAt   DateTime       @default(now())
   
   user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  week          Week           @relation(fields: [weekId], references: [id], onDelete: Cascade)
+  week          Week?          @relation(fields: [weekId], references: [id], onDelete: Cascade)
+  assignment    Assignment     @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
   
-  @@unique([userId, weekId])
+  @@unique([userId, assignmentId])
+}
+
+// WorkspaceRun stores small records produced by Codespaces after running checks
+// or when a user submits (e.g., via pushing to `submit` branch). The webhook
+// handler will create these records by cloning the pushed repo and reading
+// the `.check50/result.json` file (if present).
+model WorkspaceRun {
+  id           String   @id @default(cuid())
+  githubLogin  String?
+  repoFullName String
+  branch       String?
+  tool         String
+  status       String
+  summary      String?
+  rawResult    Json?
+  // Optional grading fields
+  passed       Int?
+  total        Int?
+  score        Float?    // normalized score (e.g., percentage or points)
+  maxScore     Float?    // e.g., 100.0
+  commitSha    String?
+  assignmentId String?
+  assignment   Assignment? @relation(fields: [assignmentId], references: [id])
+  createdAt    DateTime @default(now())
 }

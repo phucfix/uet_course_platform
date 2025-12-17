@@ -11,18 +11,20 @@ const isAuthenticated = (req: any, res: any, next: any) => {
   res.status(401).json({ message: 'Not authenticated' });
 };
 
-// Get user's submissions for a course
+// Get user's submissions for a course (all assignments)
 router.get('/course/:courseId', isAuthenticated, async (req: any, res) => {
   try {
     const submissions = await prisma.submission.findMany({
       where: {
         userId: req.user.id,
-        week: {
-          courseId: req.params.courseId
+        assignment: {
+          week: {
+            courseId: req.params.courseId
+          }
         }
       },
       include: {
-        week: true
+        assignment: { include: { week: true } }
       },
       orderBy: {
         submittedAt: 'desc'
@@ -34,18 +36,18 @@ router.get('/course/:courseId', isAuthenticated, async (req: any, res) => {
   }
 });
 
-// Get user's submission for a specific week
-router.get('/week/:weekId', isAuthenticated, async (req: any, res) => {
+// Get user's submission for a specific assignment
+router.get('/assignment/:assignmentId', isAuthenticated, async (req: any, res) => {
   try {
     const submission = await prisma.submission.findUnique({
       where: {
-        userId_weekId: {
+        userId_assignmentId: {
           userId: req.user.id,
-          weekId: req.params.weekId
+          assignmentId: req.params.assignmentId
         }
       },
       include: {
-        week: true
+        assignment: { include: { week: true } }
       }
     });
     
@@ -59,26 +61,26 @@ router.get('/week/:weekId', isAuthenticated, async (req: any, res) => {
   }
 });
 
-// Submit or update assignment for a week
+// Submit or update assignment
 router.post('/', isAuthenticated, async (req: any, res) => {
   try {
-    const { weekId, content } = req.body;
+    const { assignmentId, content } = req.body;
     
-    // Verify user is enrolled in the course
-    const week = await prisma.week.findUnique({
-      where: { id: weekId },
-      include: { course: true }
+    // Verify assignment exists and belongs to a course
+    const assignment = await prisma.assignment.findUnique({
+      where: { id: assignmentId },
+      include: { week: { include: { course: true } } }
     });
     
-    if (!week) {
-      return res.status(404).json({ message: 'Week not found' });
+    if (!assignment) {
+      return res.status(404).json({ message: 'Assignment not found' });
     }
     
     const enrollment = await prisma.enrollment.findUnique({
       where: {
         userId_courseId: {
           userId: req.user.id,
-          courseId: week.courseId
+          courseId: assignment.week.courseId
         }
       }
     });
@@ -87,25 +89,27 @@ router.post('/', isAuthenticated, async (req: any, res) => {
       return res.status(403).json({ message: 'Not enrolled in this course' });
     }
     
-    // Upsert submission
+    // Upsert submission by assignment
     const submission = await prisma.submission.upsert({
       where: {
-        userId_weekId: {
+        userId_assignmentId: {
           userId: req.user.id,
-          weekId
+          assignmentId
         }
       },
       update: {
         content,
-        submittedAt: new Date()
+        submittedAt: new Date(),
+        weekId: assignment.weekId
       },
       create: {
         userId: req.user.id,
-        weekId,
+        assignmentId,
+        weekId: assignment.weekId,
         content
       },
       include: {
-        week: true
+        assignment: { include: { week: true } }
       }
     });
     
@@ -115,14 +119,14 @@ router.post('/', isAuthenticated, async (req: any, res) => {
   }
 });
 
-// Delete submission
-router.delete('/:weekId', isAuthenticated, async (req: any, res) => {
+// Delete submission by assignment
+router.delete('/:assignmentId', isAuthenticated, async (req: any, res) => {
   try {
     await prisma.submission.delete({
       where: {
-        userId_weekId: {
+        userId_assignmentId: {
           userId: req.user.id,
-          weekId: req.params.weekId
+          assignmentId: req.params.assignmentId
         }
       }
     });
