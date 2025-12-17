@@ -27,6 +27,8 @@ export async function markSubmissionIfPassed(githubLogin: string | null | undefi
       const m = assignmentId.match(/^week(\d+)$/i);
       if (m) {
         const weekNumber = Number(m[1]);
+        // Ignore week 0 and negative weeks — these should not create assignments
+        if (weekNumber < 1) return null;
         week = await prisma.week.findFirst({ where: { weekNumber } });
       }
     }

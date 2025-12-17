@@ -4,7 +4,17 @@
   "scripts": {
     "dev": "nodemon --exec ts-node src/index.ts",
     "build": "tsc",
-    "start": "node dist/index.js"
+    "start": "node dist/index.js",
+    "prisma:cleanup-week0": "ts-node prisma/cleanup_week0_autogen.ts",
+    "prisma:cleanup-week0-index": "ts-node prisma/cleanup_week0_index.ts",
+    "prisma:cleanup-week0-index:exec": "ts-node prisma/cleanup_week0_index.ts --execute",
+    "prisma:cleanup-weekN-problems": "ts-node prisma/cleanup_weekN_problems.ts",
+    "prisma:cleanup-weekN-problems:exec": "ts-node prisma/cleanup_weekN_problems.ts --execute",
+    "prisma:mark-cs50-phucfix": "ts-node prisma/mark_cs50_complete_for_phucfix.ts",
+    "prisma:revert-cs50-phucfix": "ts-node prisma/revert_cs50_phucfix_submissions.ts",
+    "prisma:revert-cs50-phucfix:exec": "ts-node prisma/revert_cs50_phucfix_submissions.ts --execute",
+    "prisma:list-week0": "ts-node prisma/list_week0.ts",
+    "prisma:create-phucfix-mario": "ts-node prisma/create_phucfix_mario_submission.ts"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"
