@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { courseApi, submissionApi, enrollmentApi } from '../lib/api';
 import GradeBadge from '../components/GradeBadge';
 
@@ -173,20 +173,6 @@ function CourseDetail({ user }: any) {
       }
     }
   }
-
-  // No-op: assignments are read-only on this page now (no submission or navigation from here)
-  const handleAssignmentClick = () => {
-    return;
-  };
-
-  const handleSubmit = () => {
-    if (selectedAssignment && submissionContent.trim()) {
-      submitMutation.mutate({
-        assignmentId: selectedAssignment.id,
-        content: submissionContent
-      });
-    }
-  };
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-6 sm:py-8">
