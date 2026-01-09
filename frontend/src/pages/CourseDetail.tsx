@@ -88,7 +88,8 @@ function CourseDetail({ user }: any) {
       const targetWeek = course.weeks.find((w: any) => String(w.weekNumber) === String(enrollWeekParam));
       if (targetWeek) {
         const probSlug = String(problem);
-        const contentUrl = `http://localhost:1313/courses/${slug}/week${enrollWeekParam}/problems/${probSlug}/`;
+        const CONTENT_URL = import.meta.env.VITE_CONTENT_URL || 'http://localhost:1313';
+        const contentUrl = `${CONTENT_URL}/courses/${slug}/week${enrollWeekParam}/problems/${probSlug}/`;
         window.open(contentUrl, '_blank');
         // remove query params from URL to avoid repeated behavior
         navigate(location.pathname, { replace: true });
@@ -110,13 +111,14 @@ function CourseDetail({ user }: any) {
       // If user not authenticated, show sign-in prompt
       if (!user) {
         const returnTo = window.location.href;
+        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
         return (
           <div className="max-w-3xl mx-auto px-2 py-8">
             <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4">
               <p className="text-sm text-yellow-800 mb-3">To enroll in this course please sign in with GitHub.</p>
               <a
                 className="inline-flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-md hover:bg-gray-700 text-sm"
-                href={`http://localhost:3000/auth/github?returnTo=${encodeURIComponent(returnTo)}`}
+                href={`${API_URL}/auth/github?returnTo=${encodeURIComponent(returnTo)}`}
               >
                 Sign in with GitHub
               </a>

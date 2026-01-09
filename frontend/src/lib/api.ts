@@ -1,7 +1,9 @@
 import axios from 'axios';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
 const api = axios.create({
-  baseURL: 'http://localhost:3000',
+  baseURL: API_URL,
   withCredentials: true,
 });
 
@@ -9,7 +11,7 @@ export const authApi = {
   getCurrentUser: () => api.get('/auth/user'),
   logout: () => api.post('/auth/logout'),
   loginWithGithub: () => {
-    window.location.href = 'http://localhost:3000/auth/github';
+    window.location.href = `${API_URL}/auth/github`;
   }
 };
 
